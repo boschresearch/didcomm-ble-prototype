@@ -5,7 +5,7 @@
 import type { Logger } from '@aries-framework/core'
 import noble = require('@abandonware/noble')
 
-interface ConncetedDevice {
+interface ConnectedDevice {
   peripheral: noble.Peripheral
   writeCharactistic: noble.Characteristic
 }
@@ -16,7 +16,7 @@ export class TransportCentral {
   private serviceUUID: string
   private logger!: Logger
   private inboundCB: (data?: Buffer) => void
-  private connectedDevices: Map<string, ConncetedDevice>
+  private connectedDevices: Map<string, ConnectedDevice>
 
   constructor(serviceUUID: string, readCharacteristic: string, writeCharacteristic: string, logger: Logger, inboundCB: (data?: Buffer) => void) {
     this.readCharacteristicUUID = parseUUID(readCharacteristic)
@@ -24,7 +24,7 @@ export class TransportCentral {
     this.serviceUUID = parseUUID(serviceUUID)
     this.logger = logger
     this.inboundCB = inboundCB
-    this.connectedDevices = new Map<string, ConncetedDevice>();
+    this.connectedDevices = new Map<string, ConnectedDevice>();
   }
 
   public async stop(): Promise<void> {
@@ -103,7 +103,7 @@ export class TransportCentral {
             _cancel()
             reject()
           }).then(async () => {
-            logger.debug('Getting Characteristics')
+            logger.debug('Getting read & write Characteristics')
             discoveredPeripheral.discoverSomeServicesAndCharacteristicsAsync([service], [readChar, writeChar]).then((serviceAndChars) => {
               logger.debug('Successfuly found expected Services/Characteristics')
               let characteristics = serviceAndChars.characteristics
@@ -116,15 +116,15 @@ export class TransportCentral {
                   _cancel()
                   reject()
                 }).then(() => {
-                  logger.debug('Successfully sent message, registering for possible anwsers')
+                  logger.debug('Successfully sent message, registering for possible answers')
                   // Remember device
                   connectedDevices.set(deviceUUID,{
                     peripheral: discoveredPeripheral,
                     writeCharactistic: writeCharacteristic!,
                   })
-                  // Timeout for repsonse
+                  // Timeout for response
                   let readTimeout = setTimeout(() => {
-                    logger.debug("waited 10 seconds for incomign messages, closing connection")
+                    logger.debug("waited 10 seconds for incomming messages, closing connection")
                     readCharacteristic?.removeAllListeners
                     connectedDevices.delete(deviceUUID)
                     _cancel()
